@@ -1,23 +1,31 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate,Link } from "react-router-dom";
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const path = location.pathname;
+  const [display, setDisplay] = useState(path === '/main');
+
+  useEffect(() => {
+    setDisplay(path === '/main')
+  }, [path]);
 
   const handleLogout = () => {
-    navigate('/auth');
+    setDisplay(false);
+    navigate('/');
   }
 
   return (
-    <header className="bg-blue-600 text-white shadow-md">
+    <header className="bg-black text-white shadow-md">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">My Website</h1>
+        <h1 className="text-2xl font-bold">User Management</h1>
         <nav>
           <ul className="flex space-x-6">
             <li>
-              <a href="#home" className="hover:text-gray-300" onClick={handleLogout}>
+              {display && <Link to="/" className="hover:text-gray-300" onClick={handleLogout}>
                 Logout
-              </a>
+              </Link>}
             </li>
           </ul>
         </nav>

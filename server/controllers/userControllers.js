@@ -48,35 +48,41 @@ const createUser = async (req, res) => {
 }
 
 const updateUser = async (req, res) => {
-    const {userId} = req.params;
+    const { userId } = req.params;
     const updatedData = req.body;
 
-    if(!mongoose.Types.ObjectId.isValid(userId)){
-        return res.status(400).send({message: 'Invalid User ID.'});
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).send({ message: 'Invalid User ID.' });
     }
 
     try {
-      const updateUserId = new mongoose.Types.ObjectId(userId);
-      
-      const updatedUser = await User.findOneAndUpdate(
-        {userId: updateUserId},
-        {$set: updatedData},
-        {new: true}
-      );
+        const updateUserId = new mongoose.Types.ObjectId(userId);
+        const updatedUser = await User.findOneAndUpdate(
+            { userId: updateUserId },
+            { $set: updatedData },
+            { new: true, runValidators: true}
+        );
 
-      if(updatedUser){
-        res.status(200).json({message: `User with UserId: ${userId} updated successfully.`});
-      } else {
-        res.status(404).json({message: 'UserId Not Found or Updated Data Error.'});
-      }
+        if (updatedUser) {
+            res.status(200).json({
+                message: `User with UserId: ${userId} updated successfully.`,
+                data: updatedUser,
+            });
+        } else {
+            res.status(404).json({ message: 'UserId not found.' });
+        }
     } catch (error) {
-        res.status(500).json({message: 'Server Error, failed to update user', error: error});
+        res.status(500).json({ message: 'Server error, failed to update user.', error: error.message });
     }
-}
+};
+
 
 const deleteUser = async (req, res) => {
     const {userIds} = req.body;
 
+    console.log(userIds);
+    console.log(Array.isArray(userIds));
+    
     if(!userIds || !Array.isArray(userIds) || userIds.length === 0){
         return res.status(400).json({message: "Please provide a valid userId to proceed."});
     }
@@ -95,20 +101,18 @@ const deleteUser = async (req, res) => {
 }
 
 const getUser = async (req, res) => {
-    const userID = req.params.userId;
+    const Email = req.params.email;
 
     try {
-        const reqUserID = new mongoose.Types.ObjectId(userID);
+        const response = await User.findOne({email: Email});
 
-        const response = await User.find({userId: reqUserID});
-
-        if(response.length !== 0){
-            res.status(200).json({message: `User with userId: ${userID} generated successfully`, data: response});
+        if(response){
+            res.status(200).json({message: `User generated successfully`, data: response});
         } else {
             res.status(404).json({message: "Error generating the required data."});
         }
     } catch (error) {
-        res.status(500).json({message: 'Server Error', error: error, userId: reqUserID, rawuserId : userID});
+        res.status(500).json({message: 'Server Error', error: error.message});
     }
 }
 
@@ -175,7 +179,7 @@ const loginUser = async (req, res) => {
         }
 
         const token = generateToken(user.userId);
-        res.status(200).json({message: 'Login Successful.', token});
+        res.status(200).json({message: 'Login Successful.', user, token});
     } catch (error) {
         res.status(500).json({message: 'Server Error.', error: error});
     }
