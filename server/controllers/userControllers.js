@@ -1,9 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const User = require('../model/userModel');
+const {generateToken} = require('../middleware/userMiddleware');
 
 const createUser = async (req, res) => {
-    const {name, email, mobile, profilePicture, password} = req.body;
+    const {name, email, mobile, profilePicture,metadata, password} = req.body;
 
     if(!name){
         return res.status(400).json({message: "Please Provide Valid Name"});
@@ -32,6 +34,7 @@ const createUser = async (req, res) => {
         email: email,
         mobile: mobile,
         profilePicture: profilePicture !== "" ? profilePicture : "",
+        metadata: metadata !== "" ? metadata : "",
         password: hashedPassword
     }); 
 
@@ -75,7 +78,7 @@ const deleteUser = async (req, res) => {
     const {userIds} = req.body;
 
     if(!userIds || !Array.isArray(userIds) || userIds.length === 0){
-        return res.status(400).json({message: "Please provide a valid taskId to proceed."});
+        return res.status(400).json({message: "Please provide a valid userId to proceed."});
     }
 
     try {
@@ -105,7 +108,7 @@ const getUser = async (req, res) => {
             res.status(404).json({message: "Error generating the required data."});
         }
     } catch (error) {
-        res.status(500).json({message: 'Server Error', error: error});
+        res.status(500).json({message: 'Server Error', error: error, userId: reqUserID, rawuserId : userID});
     }
 }
 
@@ -113,14 +116,69 @@ const getAllUsers = async (req, res) => {
     try {
         const getAllData = await User.find({});
 
-        if(getAllData){
+        if(getAllData.length !== 0){
             res.status(200).json({message: "All Data Generated Successfully.", data: getAllData});
         } else {
             res.status(404).json({message: "Error: No Data Generated"});
         }
     } catch (error) {
-        res.status(500).json({message: "Server Error", error: error});
+        res.status(500).json({message: "Server Error", error: error.message});
     }
 }
 
-module.exports = {createUser, updateUser, deleteUser, getUser, getAllUsers};
+const registerUser = async (req, res) => {
+    const {name, email, mobile, profilePicture,metadata, password} = req.body;
+
+    if(!name || !email || !mobile || !password){
+        return res.status(400).json({message: "Please Fill in the mandatory fields."});
+    }
+
+    const oldDetails = await User.findOne({email: email});
+
+    if(oldDetails){
+        return res.status(400).json({message: "User Already Exists"});
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = new User({
+        name: name,
+        email: email,
+        mobile: mobile,
+        profilePicture: profilePicture !== "" ? profilePicture : "",
+        metadata: metadata !== "" ? metadata : "",
+        password: hashedPassword
+    }); 
+
+    try {
+        await newUser.save();
+        res.status(200).json({message: 'User Created Successfully.'});
+    } catch (error) {
+        res.status(500).json({message: 'Server Error', error: error});
+    }
+}
+
+const loginUser = async (req, res) => {
+    const {email, password} = req.body;
+
+    try {
+        const user = await User.findOne({email: email});
+
+        if(!user){
+            return res.status(404).json({message: 'Invalid email or password'});
+        }
+
+        const matchPassword = await bcrypt.compare(password, user.password);
+        if(!matchPassword){
+            return res.status(400).json({message: 'Invalid credentials'});
+        }
+
+        const token = generateToken(user.userId);
+        res.status(200).json({message: 'Login Successful.', token});
+    } catch (error) {
+        res.status(500).json({message: 'Server Error.', error: error});
+    }
+}
+
+module.exports = {createUser, updateUser, deleteUser, getUser, getAllUsers, loginUser, registerUser};

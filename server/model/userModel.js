@@ -23,8 +23,12 @@ const userSchema = new mongoose.Schema({
         match: [/^\d{10}$/, 'Mobile number must be 10 digits'],
     },
     profilePicture: {
-        type: String, // Can store Base64 or a URL
+        type: String,
         default: null,
+    },
+    metadata: {
+        type: String,
+        default: null
     },
     password: {
         type: String,
