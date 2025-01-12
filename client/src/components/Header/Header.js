@@ -15,6 +15,7 @@ const Header = () => {
     setDisplay(false);
     navigate('/');
     localStorage.removeItem("jwtToken");
+    localStorage.removeItem("LoggedInUser");
   }
 
   return (

@@ -88,10 +88,11 @@ const Auth = () => {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/user/login', { email, password });
+      const response = await axios.post('https://user-crud-backend-0ys2.onrender.com/user/login', { email, password });
       console.log(response);
       const token = response.data.token;
       localStorage.setItem('jwtToken', token);
+      localStorage.setItem('LoggedInUser', response.data.user.userId);
       Swal.fire('Login Successful', 'Welcome!', 'success');
       navigate('/main');
     } catch (error) {
@@ -110,7 +111,7 @@ const Auth = () => {
         profilePicture: image || null,
         metadata: ""
       };
-      await axios.post('http://localhost:5000/user/register', data);
+      await axios.post('https://user-crud-backend-0ys2.onrender.com/user/register', data);
       Swal.fire('Registration Successful', 'You can now log in.', 'success');
       handleLogin();
     } catch (error) {

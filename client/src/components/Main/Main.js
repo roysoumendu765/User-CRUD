@@ -22,10 +22,11 @@ const Main = () => {
     password: '',
   });
 
+  const [getemail, setGetEmail] = useState("")
+
   const openModal = (type, userId = null) => {
     setFormType(type);
     if (type === 'update' && userId) {
-      // Fetch the user details for updating
       const selectedUser = users.find((user) => user.userId === userId);
       setFormData({
         email: selectedUser.email,
@@ -42,6 +43,8 @@ const Main = () => {
           return [...prevIds, userId];
         }
       });
+    } else if(type === 'create'){
+      setErrors({});
     }
     setModalOpen(true);
   };
@@ -98,6 +101,7 @@ const Main = () => {
   };
 
   const handleCheckboxChange = (userId) => {
+    setSelectedIds([]);
     setSelectedIds((prevIds) => {
       if (prevIds.includes(userId)) {
         return prevIds.filter((id) => id !== userId);
@@ -110,7 +114,7 @@ const Main = () => {
   const getAllUsers = async () => {
     const token = localStorage.getItem('jwtToken');
     try {
-      const response = await axios.get('http://localhost:5000/user/getAllUsers', {
+      const response = await axios.get('https://user-crud-backend-0ys2.onrender.com/user/getAllUsers', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -131,22 +135,30 @@ const Main = () => {
         return;
       }
 
-      const response = await axios.delete(
-        'http://localhost:5000/user/delete', {
-        headers: {
-          'Content-Type': `application/json`,
-          Authorization: `Bearer ${token}`,
-        },
-        data: { userIds: selectedIds }
-      }
-      );
+      const LoggedUser = localStorage.getItem("LoggedInUser");
+      console.log(LoggedUser)
+      console.log(!selectedIds.includes(LoggedUser));
+      if(!selectedIds.includes(LoggedUser)){
+        const response = await axios.delete(
+          'https://user-crud-backend-0ys2.onrender.com/user/delete', {
+          headers: {
+            'Content-Type': `application/json`,
+            Authorization: `Bearer ${token}`,
+          },
+          data: { userIds: selectedIds }
+        }
+        );
 
-      setUsers((prevUsers) =>
-        prevUsers.filter((user) => !selectedIds.includes(user.userId))
-      );
-      setSelectedIds([]);
-      Swal.fire('Delete Successful', response.data.message, 'success');
-      console.log('Users deleted:', selectedIds);
+        setUsers((prevUsers) =>
+          prevUsers.filter((user) => !selectedIds.includes(user.userId))
+        );
+        setSelectedIds([]);
+        Swal.fire('Delete Successful', response.data.message, 'success');
+        console.log('Users deleted:', selectedIds);
+      } else {
+        Swal.fire("Something Went Wrong!", "Cannot delete the LoggedIn User", "error");
+        return;
+      }
     } catch (error) {
       console.error('Error deleting users:', error);
       Swal.fire('Delete Unsuccessful', error.message, 'error');
@@ -157,29 +169,35 @@ const Main = () => {
   const updateUserById = async (userId, updatedUser) => {
     const token = localStorage.getItem('jwtToken');
     try {
-      const response = await axios.put(
-        `http://localhost:5000/user/update/${userId}`,
-        updatedUser,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log('User updated:', response.data);
+      const LoggedUser = localStorage.getItem("LoggedInUser");
+      if(userId != LoggedUser){
+        const response = await axios.put(
+          `https://user-crud-backend-0ys2.onrender.com/user/update/${userId}`,
+          updatedUser,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log('User updated:', response.data);
 
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.userId === userId ? { ...user, ...updatedUser } : user
-        )
-      );
-
-      closeModal();
-      console.log(response.data.message);
-      Swal.fire("Update Successful", response.data.message, "success");
-      getAllUsers();
-      setSelectedIds([]);
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user.userId === userId ? { ...user, ...updatedUser } : user
+          )
+        );
+  
+        closeModal();
+        console.log(response.data.message);
+        Swal.fire("Update Successful", response.data.message, "success");
+        getAllUsers();
+        setSelectedIds([]);
+      } else {
+        Swal.fire("Something Went Wrong!", "Cannot Update the LoggedIn User", "error");
+        return;
+      }
     } catch (error) {
       console.error('Error updating user:', error.response?.data || error.message);
       Swal.fire('Update Unsuccessful', error.message, "error");
@@ -189,7 +207,7 @@ const Main = () => {
   const getUserByEmail = async (email) => {
     const token = localStorage.getItem('jwtToken');
     try {
-      const response = await axios.get(`http://localhost:5000/user/getUser/${email}`, {
+      const response = await axios.get(`https://user-crud-backend-0ys2.onrender.com/user/getUser/${email}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -206,7 +224,7 @@ const Main = () => {
   const createUser = async (newUser) => {
     const token = localStorage.getItem('jwtToken');
     try {
-      const response = await axios.post('http://localhost:5000/user/create', newUser, {
+      const response = await axios.post('https://user-crud-backend-0ys2.onrender.com/user/create', newUser, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -238,6 +256,7 @@ const Main = () => {
       if (formType === 'create') {
         createUser(newUser);
       } else if (formType === 'getUserById') {
+        console.log("Inside");
         getUserByEmail(email);
       } else if (formType === 'update') {
         const userId = selectedIds[0];
@@ -245,6 +264,16 @@ const Main = () => {
       }
   }
   };
+
+  const handleEmailChange = (e) => {
+    setGetEmail(e.target.value);
+  }
+
+  const handleGetByEmail = (e) => {
+    e.preventDefault();
+    console.log("working");
+    getUserByEmail(getemail);
+  }
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -379,7 +408,7 @@ const Main = () => {
             <h2 className="text-xl font-bold mb-4">
               {formType === 'getUserById' ? 'Get User By Email' : `${formType} User`}
             </h2>
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={formType === "getUserById" ? handleGetByEmail : handleSubmit}>
               {formType === "getUserById" ? (
                 <div>
                   <label
@@ -391,8 +420,8 @@ const Main = () => {
                   <input
                     id="email"
                     type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
+                    value={getemail}
+                    onChange={handleEmailChange}
                     className={`w-full px-4 py-2 border ${errors.email ? "border-red-500" : "border-gray-300"
                       } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     placeholder="Enter email"
@@ -517,11 +546,8 @@ const Main = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={Object.keys(errors).length > 0}
-                  className={`w-full py-2 rounded ${Object.keys(errors).length > 0
-                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                      : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
+                  disabled={false}
+                  className="w-full py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
                 >
                   Submit
                 </button>
