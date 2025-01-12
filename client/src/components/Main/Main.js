@@ -13,6 +13,7 @@ const Main = () => {
   const [user, setUser] = useState({});
   const [getAll, setGetAll] = useState(false);
   const [showTable, setShowTable] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     email: '',
@@ -34,6 +35,13 @@ const Main = () => {
       });
       setImage(selectedUser.profilePicture || null);
       setImagePreview(selectedUser.profilePicture || null);
+      setSelectedIds((prevIds) => {
+        if (prevIds.includes(userId)) {
+          return prevIds.filter((id) => id !== userId);
+        } else {
+          return [...prevIds, userId];
+        }
+      });
     }
     setModalOpen(true);
   };
@@ -67,6 +75,26 @@ const Main = () => {
       setImage(base64);
       setImagePreview(URL.createObjectURL(file));
     }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name && formType !== "getUserById") {
+      newErrors.name = "Name is required.";
+    }
+    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Valid email is required.";
+    }
+    if (!formData.mobile && formType !== "getUserById") {
+      newErrors.mobile = "Mobile number is required.";
+    } else if (formData.mobile.length !== 10) {
+      newErrors.mobile = "Mobile number must be exactly 10 digits.";
+    }
+    if (!formData.password && formType !== "getUserById") {
+      newErrors.password = "Password is required.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleCheckboxChange = (userId) => {
@@ -117,11 +145,11 @@ const Main = () => {
         prevUsers.filter((user) => !selectedIds.includes(user.userId))
       );
       setSelectedIds([]);
-      Swal.fire(response.data.message, 'Operation Successful', 'success');
+      Swal.fire('Delete Successful', response.data.message, 'success');
       console.log('Users deleted:', selectedIds);
     } catch (error) {
       console.error('Error deleting users:', error);
-      Swal.fire(error.message, 'Something Went Wrong', 'error');
+      Swal.fire('Delete Unsuccessful', error.message, 'error');
     }
   };
 
@@ -141,7 +169,6 @@ const Main = () => {
       );
       console.log('User updated:', response.data);
 
-      // Update local state
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
           user.userId === userId ? { ...user, ...updatedUser } : user
@@ -149,9 +176,13 @@ const Main = () => {
       );
 
       closeModal();
+      console.log(response.data.message);
+      Swal.fire("Update Successful", response.data.message, "success");
       getAllUsers();
+      setSelectedIds([]);
     } catch (error) {
       console.error('Error updating user:', error.response?.data || error.message);
+      Swal.fire('Update Unsuccessful', error.message, "error");
     }
   };
 
@@ -175,7 +206,7 @@ const Main = () => {
   const createUser = async (newUser) => {
     const token = localStorage.getItem('jwtToken');
     try {
-      const response = await axios.post('/api/users', newUser, {
+      const response = await axios.post('http://localhost:5000/user/create', newUser, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -183,32 +214,36 @@ const Main = () => {
       setUsers((prevUsers) => [...prevUsers, response.data]);
       console.log('User created:', response.data);
       closeModal();
+      Swal.fire("Creation Successful", response.data.message, "success");
+      getAllUsers();
     } catch (error) {
+      Swal.fire("Creation Unsuccessful", error.message, "error");
       console.error('Error creating user:', error);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if(validateForm()){
+      const { email, name, mobile, password } = formData;
+      const newUser = {
+        email,
+        name,
+        mobile,
+        password,
+        profilePicture: image || null,
+        metadata: "",
+      };
 
-    const { email, name, mobile, password } = formData;
-    const newUser = {
-      email,
-      name,
-      mobile,
-      password,
-      profilePicture: image || null,
-      metadata: "",
-    };
-
-    if (formType === 'create') {
-      createUser(newUser);
-    } else if (formType === 'getUserById') {
-      getUserByEmail(email);
-    } else if (formType === 'update') {
-      const userId = selectedIds[0];
-      updateUserById(userId, newUser);
-    }
+      if (formType === 'create') {
+        createUser(newUser);
+      } else if (formType === 'getUserById') {
+        getUserByEmail(email);
+      } else if (formType === 'update') {
+        const userId = selectedIds[0];
+        updateUserById(userId, newUser);
+      }
+  }
   };
 
   const handleInputChange = (e) => {
@@ -345,7 +380,7 @@ const Main = () => {
               {formType === 'getUserById' ? 'Get User By Email' : `${formType} User`}
             </h2>
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {formType === 'getUserById' ? (
+              {formType === "getUserById" ? (
                 <div>
                   <label
                     className="block text-gray-600 font-medium mb-1"
@@ -358,9 +393,13 @@ const Main = () => {
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-4 py-2 border ${errors.email ? "border-red-500" : "border-gray-300"
+                      } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     placeholder="Enter email"
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                  )}
                 </div>
               ) : (
                 <>
@@ -376,9 +415,13 @@ const Main = () => {
                       type="text"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-4 py-2 border ${errors.name ? "border-red-500" : "border-gray-300"
+                        } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       placeholder="Enter name"
                     />
+                    {errors.name && (
+                      <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                    )}
                   </div>
                   <div>
                     <label
@@ -392,9 +435,13 @@ const Main = () => {
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-4 py-2 border ${errors.email ? "border-red-500" : "border-gray-300"
+                        } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       placeholder="Enter email"
                     />
+                    {errors.email && (
+                      <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                    )}
                   </div>
                   <div>
                     <label
@@ -408,9 +455,14 @@ const Main = () => {
                       type="text"
                       value={formData.mobile}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      maxLength="10"
+                      className={`w-full px-4 py-2 border ${errors.mobile ? "border-red-500" : "border-gray-300"
+                        } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       placeholder="Enter mobile"
                     />
+                    {errors.mobile && (
+                      <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>
+                    )}
                   </div>
                   <div>
                     <label
@@ -424,9 +476,13 @@ const Main = () => {
                       type="password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-4 py-2 border ${errors.password ? "border-red-500" : "border-gray-300"
+                        } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       placeholder="Enter password"
                     />
+                    {errors.password && (
+                      <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                    )}
                   </div>
                   <div>
                     <label
@@ -461,12 +517,17 @@ const Main = () => {
                 </button>
                 <button
                   type="submit"
-                  className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  disabled={Object.keys(errors).length > 0}
+                  className={`w-full py-2 rounded ${Object.keys(errors).length > 0
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                    }`}
                 >
                   Submit
                 </button>
               </div>
             </form>
+
           </div>
         </div>
       )}

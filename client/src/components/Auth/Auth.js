@@ -12,6 +12,10 @@ const Auth = () => {
   const [mobile, setMobile] = useState('');
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [nameError, setNameError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [loginstatus, setLoginStatus] = useState({
     isLogin: true,
     isRegister: false,
@@ -59,6 +63,10 @@ const Auth = () => {
     setEmail('');
     setPassword('');
     setMobile('');
+    setNameError('');
+    setEmailError('');
+    setPasswordError('');
+    setPhoneError('');
     setImage(null);
     setImagePreview(null);
   };
@@ -69,6 +77,10 @@ const Auth = () => {
     setEmail('');
     setPassword('');
     setMobile('');
+    setNameError('');
+    setEmailError('');
+    setPasswordError('');
+    setPhoneError('');
     setImage(null);
     setImagePreview(null);
   };
@@ -100,7 +112,7 @@ const Auth = () => {
       };
       await axios.post('http://localhost:5000/user/register', data);
       Swal.fire('Registration Successful', 'You can now log in.', 'success');
-      handleLogin(); 
+      handleLogin();
     } catch (error) {
       Swal.fire('Error', 'Registration failed. Please try again.', 'error');
     }
@@ -140,11 +152,22 @@ const Auth = () => {
                 <input
                   id="loginEmail"
                   type="email"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-4 py-2 border ${emailError ? "border-red-500" : "border-gray-300"
+                    } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Enter email"
                   value={email}
                   onChange={handleEmail}
+                  onBlur={() => {
+                    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+                      setEmailError("Please enter a valid email address.");
+                    } else {
+                      setEmailError("");
+                    }
+                  }}
                 />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
               </div>
               <div>
                 <label className="block text-gray-600 font-medium mb-1" htmlFor="loginPassword">
@@ -153,15 +176,27 @@ const Auth = () => {
                 <input
                   id="loginPassword"
                   type="password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-4 py-2 border ${passwordError ? "border-red-500" : "border-gray-300"
+                    } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Password"
                   value={password}
                   onChange={handlePassword}
+                  onBlur={() => {
+                    if (!password || password.length < 8) {
+                      setPasswordError("Password must be at least 8 characters.");
+                    } else {
+                      setPasswordError("");
+                    }
+                  }}
                 />
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+                )}
               </div>
               <button
                 type="submit"
                 className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                disabled={emailError || passwordError}
               >
                 Login
               </button>
@@ -175,12 +210,22 @@ const Auth = () => {
                 <input
                   id="registerName"
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-4 py-2 border ${nameError ? "border-red-500" : "border-gray-300"
+                    } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Enter name"
                   value={name}
                   onChange={handleName}
+                  onBlur={() => {
+                    if (!name || name.trim().length < 3) {
+                      setNameError("Name must be at least 3 characters long.");
+                    } else {
+                      setNameError("");
+                    }
+                  }}
                 />
+                {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
               </div>
+
               <div>
                 <label className="block text-gray-600 font-medium mb-1" htmlFor="registerPhone">
                   Phone
@@ -188,12 +233,23 @@ const Auth = () => {
                 <input
                   id="registerPhone"
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  maxLength={10}
+                  className={`w-full px-4 py-2 border ${phoneError ? "border-red-500" : "border-gray-300"
+                    } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Enter phone"
                   value={mobile}
                   onChange={handleMobile}
+                  onBlur={() => {
+                    if (!mobile || !/^\d{10}$/.test(mobile)) {
+                      setPhoneError("Phone number must be 10 digits.");
+                    } else {
+                      setPhoneError("");
+                    }
+                  }}
                 />
+                {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
               </div>
+
               <div>
                 <label className="block text-gray-600 font-medium mb-1" htmlFor="registerEmail">
                   Email address
@@ -201,12 +257,22 @@ const Auth = () => {
                 <input
                   id="registerEmail"
                   type="email"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-4 py-2 border ${emailError ? "border-red-500" : "border-gray-300"
+                    } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Enter email"
                   value={email}
                   onChange={handleEmail}
+                  onBlur={() => {
+                    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+                      setEmailError("Please enter a valid email address.");
+                    } else {
+                      setEmailError("");
+                    }
+                  }}
                 />
+                {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
               </div>
+
               <div>
                 <label className="block text-gray-600 font-medium mb-1" htmlFor="registerPassword">
                   Password
@@ -214,12 +280,22 @@ const Auth = () => {
                 <input
                   id="registerPassword"
                   type="password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-4 py-2 border ${passwordError ? "border-red-500" : "border-gray-300"
+                    } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Password"
                   value={password}
                   onChange={handlePassword}
+                  onBlur={() => {
+                    if (!password || password.length < 8) {
+                      setPasswordError("Password must be at least 8 characters.");
+                    } else {
+                      setPasswordError("");
+                    }
+                  }}
                 />
+                {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
               </div>
+
               <div>
                 <label className="block text-gray-600 font-medium mb-1" htmlFor="registerImage">
                   Profile Picture (optional)
@@ -238,9 +314,11 @@ const Auth = () => {
                   />
                 )}
               </div>
+
               <button
                 type="submit"
                 className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                disabled={nameError || phoneError || emailError || passwordError}
               >
                 Register
               </button>

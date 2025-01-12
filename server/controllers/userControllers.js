@@ -4,6 +4,11 @@ const mongoose = require('mongoose');
 const User = require('../model/userModel');
 const {generateToken} = require('../middleware/userMiddleware');
 
+const isBcryptHash = (password) => {
+    const bcryptRegex = /^\$2[aby]?\$\d{2}\$[./A-Za-z0-9]{53}$/;
+    return bcryptRegex.test(password);
+}
+
 const createUser = async (req, res) => {
     const {name, email, mobile, profilePicture,metadata, password} = req.body;
 
@@ -53,6 +58,12 @@ const updateUser = async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).send({ message: 'Invalid User ID.' });
+    }
+
+    if(!isBcryptHash(updatedData.password)){
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(updatedData.password, salt);
+        updatedData.password = hashedPassword;
     }
 
     try {

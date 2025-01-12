@@ -14,6 +14,7 @@ const Header = () => {
   const handleLogout = () => {
     setDisplay(false);
     navigate('/');
+    localStorage.removeItem("jwtToken");
   }
 
   return (
